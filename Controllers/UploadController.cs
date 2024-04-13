@@ -12,7 +12,7 @@ namespace UploadApi.Controllers
     /// <summary>
     /// Upload Controller
     /// </summary>
-    [Route("api/upload-api/v1/upload")]
+    [Route("/v1/upload")]
     [ApiController]
     public class UploadController : ControllerBase
     {

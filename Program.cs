@@ -109,7 +109,19 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
+    app.UseSwagger(option =>
+    {
+        option.RouteTemplate = "swagger/{documentName}/swagger.json";
+        option.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
+        {
+            swaggerDoc.Servers = new List<OpenApiServer> {
+                new OpenApiServer {
+                    Url = $"{httpReq.Scheme}://{httpReq.Host.Value}/{builder.Configuration.GetSection("BasePath").Get<string>()!}"
+                }
+            };
+        });
+    });
+
     app.UseSwaggerUI(option =>
     {
         option.DocumentTitle = "Upload API";
