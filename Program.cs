@@ -116,7 +116,7 @@ if (app.Environment.IsDevelopment())
         {
             swaggerDoc.Servers = new List<OpenApiServer> {
                 new OpenApiServer {
-                    Url = $"{httpReq.Scheme}://{httpReq.Host.Value}/{builder.Configuration.GetSection("BasePath").Get<string>()!}"
+                    Url = builder.Configuration.GetSection("BaseUrl").Get<string?>() ?? $"{httpReq.Scheme}://{httpReq.Host.Value}/"
                 }
             };
         });
