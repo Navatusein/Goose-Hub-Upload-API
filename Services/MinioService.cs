@@ -38,10 +38,9 @@ namespace UploadApi.Services
         /// <summary>
         /// Upload content ot MinIO
         /// </summary>
-        public async Task<string> UploadContent(IFormFile file)
+        public async Task<string> UploadContentAsync(IFormFile file, string fileName)
         {
-            string extension = Path.GetExtension(file.FileName);
-            string objectName = Guid.NewGuid().ToString() + extension;
+            string objectName = $"{fileName}/temp{Path.GetExtension(file.FileName)}";
 
             var stream = file.OpenReadStream();
 
@@ -60,7 +59,7 @@ namespace UploadApi.Services
         /// <summary>
         /// Generate presigned url 
         /// </summary>
-        public async Task<string> GetPresignedUrl(string objectPath)
+        public async Task<string> GetUrlAsync(string objectPath)
         {
             var presignedGetObjectArgs = new PresignedGetObjectArgs()
                 .WithBucket(_contentBucket)

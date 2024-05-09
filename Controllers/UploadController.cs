@@ -1,6 +1,7 @@
 ﻿using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using System;
 using UploadApi.Dtos;
 using UploadApi.MassTransit.Events;
 using UploadApi.MassTransit.Responses;
@@ -59,39 +60,9 @@ namespace UploadApi.Controllers
             if (!result.Message.IsExists)
                 return StatusCode(404, new ErrorDto("Content not found", "404"));
 
-            var path = await _minioService.UploadContent(uploadContentDto.File);
+            await SendTranscodeTaskAsync(uploadContentDto, DataTypeEnum.Movie);
 
-            var movieAddContentEvent = new MovieAddContentEvent()
-            {
-                MovieId = uploadContentDto.ContentId,
-                Content = new Content()
-                {
-                    Quality = ContentQuality.FullHD,
-                    Path = path
-                }
-            };
-
-            await _publishEndpoint.Publish(movieAddContentEvent);
-
-            var url = await _minioService.GetPresignedUrl(path);
-
-            var videoProcessingEvent = new VideoProcessingEvent()
-            {
-                FileUrl = url,
-                FileExtension = Path.GetExtension(uploadContentDto.File.FileName),
-                ContentType = uploadContentDto.File.ContentType,
-                DataType = DataTypeEnum.Movie,
-                ContentId = uploadContentDto.ContentId,
-                IsEpisode = false
-            };
-
-            videoProcessingEvent.Quality = ContentQuality.HD;
-            await _publishEndpoint.Publish(videoProcessingEvent);
-
-            videoProcessingEvent.Quality = ContentQuality.SD;
-            await _publishEndpoint.Publish(videoProcessingEvent);
-
-            return StatusCode(200, url);
+            return StatusCode(200);
         }
 
         /// <summary>
@@ -118,39 +89,9 @@ namespace UploadApi.Controllers
             if (!result.Message.IsExists)
                 return StatusCode(404, new ErrorDto("Content not found", "404"));
 
-            var path = await _minioService.UploadContent(uploadContentDto.File);
+            await SendTranscodeTaskAsync(uploadContentDto, DataTypeEnum.Serial);
 
-            var serialAddContentEvent = new SerialAddContentEvent()
-            {
-                EpisodeId = uploadContentDto.ContentId,
-                Content = new Content()
-                {
-                    Quality = ContentQuality.FullHD,
-                    Path = path
-                }
-            };
-
-            await _publishEndpoint.Publish(serialAddContentEvent);
-
-            var url = await _minioService.GetPresignedUrl(path);
-
-            var videoProcessingEvent = new VideoProcessingEvent()
-            {
-                FileUrl = url,
-                FileExtension = Path.GetExtension(uploadContentDto.File.FileName),
-                ContentType = uploadContentDto.File.ContentType,
-                DataType = DataTypeEnum.Serial,
-                ContentId = uploadContentDto.ContentId,
-                IsEpisode = false
-            };
-
-            videoProcessingEvent.Quality = ContentQuality.HD;
-            await _publishEndpoint.Publish(videoProcessingEvent);
-
-            videoProcessingEvent.Quality = ContentQuality.SD;
-            await _publishEndpoint.Publish(videoProcessingEvent);
-
-            return StatusCode(200, url);
+            return StatusCode(200);
         }
 
         /// <summary>
@@ -192,40 +133,34 @@ namespace UploadApi.Controllers
                     return StatusCode(404, new ErrorDto("Content not found", "404"));
             }
 
-            var path = await _minioService.UploadContent(uploadContentDto.File);
+            await SendTranscodeTaskAsync(uploadContentDto, DataTypeEnum.Anime);
 
-            var animeAddContentEvent = new AnimeAddContentEvent()
-            {
-                ContentId = uploadContentDto.ContentId,
-                IsEpisode = uploadContentDto.IsEpisode,
-                Content = new Content()
-                {
-                    Quality = ContentQuality.FullHD,
-                    Path = path
-                }
-            };
+            return StatusCode(200);
+        }
 
-            await _publishEndpoint.Publish(animeAddContentEvent);
-
-            var url = await _minioService.GetPresignedUrl(path);
+        private async Task SendTranscodeTaskAsync(UploadContentDto uploadContent, DataTypeEnum dataType)
+        {
+            var fileName = Guid.NewGuid().ToString();
+            var path = await _minioService.UploadContentAsync(uploadContent.File, fileName);
+            var url = await _minioService.GetUrlAsync(path);
 
             var videoProcessingEvent = new VideoProcessingEvent()
             {
                 FileUrl = url,
-                FileExtension = Path.GetExtension(uploadContentDto.File.FileName),
-                ContentType = uploadContentDto.File.ContentType,
-                DataType = DataTypeEnum.Anime,
-                ContentId = uploadContentDto.ContentId,
-                IsEpisode = uploadContentDto.IsEpisode
+                DataType = dataType,
+                FileName = fileName,
+                ContentId = uploadContent.ContentId,
+                IsEpisode = uploadContent.IsEpisode
             };
+
+            videoProcessingEvent.Quality = ContentQuality.FullHD;
+            await _publishEndpoint.Publish(videoProcessingEvent);
 
             videoProcessingEvent.Quality = ContentQuality.HD;
             await _publishEndpoint.Publish(videoProcessingEvent);
 
             videoProcessingEvent.Quality = ContentQuality.SD;
             await _publishEndpoint.Publish(videoProcessingEvent);
-
-            return StatusCode(200, url);
         }
     }
 }

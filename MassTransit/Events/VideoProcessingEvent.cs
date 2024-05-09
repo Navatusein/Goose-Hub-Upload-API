@@ -39,16 +39,10 @@ namespace UploadApi.MassTransit.Events
         public string FileUrl { get; set; } = null!;
 
         /// <summary>
-        /// Gets or Sets FileExtension
+        /// Gets or Sets FileUrl
         /// </summary>
         [Required]
-        public string FileExtension { get; set; } = null!;
-
-        /// <summary>
-        /// Gets or Sets ContentType
-        /// </summary>
-        [Required]
-        public string ContentType { get; set; } = null!;
+        public string FileName { get; set; } = null!;
 
         /// <summary>
         /// Gets or Sets Quality
